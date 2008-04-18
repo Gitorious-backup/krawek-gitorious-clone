@@ -23,3 +23,20 @@ moes_repos:
   sha1: 62cdb7020ff920e5aa642c3d4066950dd1f01f4d # bar
   body: a comment in moes repos
   project_id: 2
+
+reference1:
+  id: 4
+  user_id: 1
+  repository_id: 1
+  sha1: 62cdb7020ff920e5aa642c3d4066950dd1f01f4d # bar
+  body: "#1: nice comment"
+  project_id: 1
+
+reference2:
+  id: 5
+  user_id: 1
+  repository_id: 1
+  sha1: 62cdb7020ff920e5aa642c3d4066950dd1f01f4d # bar
+  body: "hey johan"
+  project_id: 1
+

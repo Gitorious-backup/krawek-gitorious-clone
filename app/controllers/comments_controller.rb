@@ -4,7 +4,7 @@ class CommentsController < ApplicationController
   before_filter :find_repository
   
   def index
-    @comments = @repository.comments.find(:all, :include => :user)
+    @comments = @repository.comments.find(:all, :order => "created_at asc", :include => [:user, :repository, :project])
     @merge_request_count = @repository.merge_requests.count_open
     @atom_auto_discovery_url = formatted_project_repository_comments_path(@project, @repository, :atom)
     respond_to do |format|

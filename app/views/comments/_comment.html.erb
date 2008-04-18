@@ -1,13 +1,14 @@
+<% name = "comment_#{position}" %>
 <div class="comment">
-  <a name="<%= dom_id(comment) -%>"></a>
-  <div class="body"><%= simple_format(sanitize(comment.body)) -%></div>
+  <a name="<%= name -%>"></a>
+  <div class="body"><%= render_comment_body(comment.body, position) -%></div>
   <p class="byline">
     <%= link_to(h(comment.user.login), comment.user) -%> | 
     <%= comment.created_at.to_s(:short) -%> 
     <% unless comment.sha1.blank? -%>
     | <%= link_to "on commit #{comment.sha1[0..7]}", project_repository_commit_path(comment.project, comment.repository, comment.sha1) -%> 
     <% end -%>
-    | <%= link_to %Q{<abbr title="permalink for this comment">#</abbr>}, 
-            project_repository_comments_path(comment.project, comment.repository, :anchor => dom_id(comment)) -%>
+    | <%= link_to %Q{<abbr title="permalink for this comment">##{position}</abbr>}, 
+            project_repository_comments_path(comment.project, comment.repository, :anchor => name) -%>
   </p>
 </div>

@@ -19,6 +19,9 @@
             project_repository_merge_requests_path(@project, @repository) -%></li>
 </ul>
 
-<%= render :partial => @comments -%>
+<% comment_position = 1; @comments.each do |comment| %>
+  <%= render :partial => comment, :locals => { :position => comment_position } -%>
+  <% comment_position += 1 %>
+<%- end %>
 
 <%= render :partial => "form" -%>
