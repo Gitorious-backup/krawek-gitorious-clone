@@ -5,6 +5,13 @@ class CommentsController < ApplicationController
   
   def index
     @comments = @repository.comments.find(:all, :order => "created_at asc", :include => [:user, :repository, :project])
+    
+    @comments_by_commit = {}
+    @comments.each do |comment|
+      @comments_by_commit[comment.sha1] ||= []
+      @comments_by_commit[comment.sha1] << comment
+    end
+    
     @merge_request_count = @repository.merge_requests.count_open
     @atom_auto_discovery_url = formatted_project_repository_comments_path(@project, @repository, :atom)
     respond_to do |format|
@@ -16,7 +23,7 @@ class CommentsController < ApplicationController
   def commit
     @git = @repository.git
     @commit = @git.commit(params[:sha])
-    @comments = @repository.comments.find_all_by_sha1(params[:sha], :include => :user)
+    @comments = @repository.comments.find_all_by_sha1(params[:sha], :order => "created_at asc", :include => [:user, :repository, :project])
   end
   
   def new

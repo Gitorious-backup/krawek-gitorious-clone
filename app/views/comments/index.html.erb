@@ -19,9 +19,22 @@
             project_repository_merge_requests_path(@project, @repository) -%></li>
 </ul>
 
-<% comment_position = 1; @comments.each do |comment| %>
-  <%= render :partial => comment, :locals => { :position => comment_position } -%>
-  <% comment_position += 1 %>
-<%- end %>
-
-<%= render :partial => "form" -%>
+<div class="comments">
+  <div class="comments_on_repository" style="float: left;">
+    <% comment_position = 1; @comments_by_commit[nil].each do |comment| %>
+      <%= render :partial => comment, :locals => { :position => comment_position } -%>
+      <% comment_position += 1 %>
+    <%- end %>
+    
+    <%= render :partial => "form" -%>
+  </div>
+  <div class="comments_on_commits" style="float: right;">
+    <% @comments_by_commit.each do |commit, comments| next unless commit %>
+      <h4>Comments on commit: <%= link_to "#{commit[0..7]}", project_repository_commit_path(@project, @repository, commit) -%></h4>
+      <% comment_position = 1; comments.each do |comment| %>
+        <%= render :partial => comment, :locals => { :position => comment_position } -%>
+        <% comment_position += 1 %>
+      <% end %>
+    <%- end %>
+  </div>
+</div>
