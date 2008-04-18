@@ -31,7 +31,11 @@ class CommentsController < ApplicationController
       if @comment.save
         format.html do
           flash[:success] = "Your comment was added"
-          redirect_to project_repository_comments_path(@project, @repository)
+          if sha1 = @comment.sha1
+            redirect_to project_repository_commit_comment_path(@project, @repository, sha1)
+          else
+            redirect_to project_repository_comments_path(@project, @repository)
+          end
         end
       else
         format.html { render :action => "new" }
