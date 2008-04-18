@@ -10,4 +10,9 @@ describe CommentsHelper do
     comment = comments(:reference1)
     render_comment_body(comment.body, 1).include?("href").should == false
   end
+  
+  it "should reference to user using @<login>" do
+    comment = comments(:reference2)
+    render_comment_body(comment.body, 4).include?("/users/johan").should == true
+  end
 end

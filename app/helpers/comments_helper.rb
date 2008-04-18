@@ -6,6 +6,19 @@ module CommentsHelper
         body = body.sub($1, %@<a href="#comment_#{comment_index}">#{$1}</a>@)
       end
     end
+    
+    index = -1; 
+    while index = body.index(/(@([\w\-\_]+))\b/, index+1)
+      match = $1
+      login = $2
+      
+      if User.find_by_login(login)
+        replacement = body[index, match.length].sub(match, %@<a href="/users/#{login}">#{match}</a>@)
+        body[index, match.length] = replacement
+        index += replacement.length
+      end
+    end
+    
     simple_format(sanitize(body))
   end
 end
