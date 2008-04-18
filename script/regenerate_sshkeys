@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+
+ENV["RAILS_ENV"] ||= "production"
+require File.dirname(__FILE__) + "/../config/environment"
+
+authorized_keys = File.join(ENV['HOME'], ".ssh", "authorized_keys" )
+FileUtils.mv(authorized_keys, authorized_keys+".#{Time.now.strftime("%F")}.backup") if File.exist?(authorized_keys)
+
+File.open(authorized_keys, "w") do |file|
+  SshKey.find(:all).each { |key|
+    file << key.to_key
+  }
+end
