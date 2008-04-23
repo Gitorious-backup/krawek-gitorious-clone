@@ -2,7 +2,7 @@ module TreesHelper
   include RepositoriesHelper
   
   def current_path
-    params[:path].dup
+    params[:path].to_a.dup
   end
   
   def build_tree_path(path)

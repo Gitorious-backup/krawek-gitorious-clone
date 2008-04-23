@@ -49,11 +49,12 @@ ActionController::Routing::Routes.draw do |map|
       repo.formatted_log_feed "logs/:id/feed.:format", :controller => "logs", :action => "feed", 
         :conditions => {:feed => :get}, :requirements => {:id => VALID_SHA}
       repo.resources :commits
+      repo.resources :trees
       repo.trees          "trees/", :controller => "trees", :action => "index"
       repo.with_options(:requirements => { :id => VALID_SHA }) do |r|
         r.tree           "trees/:id/*path", :controller => "trees", :action => "show"
         r.formatted_tree "trees/:id/*path.:format", :controller => "trees", :action => "show"
-        r.archive_tree   "archive/:id.tar.gz", :controller => "trees", :action => "archive"
+        r.archive_tree   "archive/:id.:format", :controller => "trees", :action => "archive"
         r.raw_blob       "blobs/raw/:id/*path", :controller => "blobs", :action => "raw"
         r.blob           "blobs/:id/*path", :controller => "blobs", :action => "show"
       end
