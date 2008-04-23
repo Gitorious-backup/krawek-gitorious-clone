@@ -44,7 +44,7 @@
   <h5>Tags:</h5>
   <ul class="links">
   <% @git.tags.sort{|a, b| a.name <=> b.name }.each do |tag| -%>
-    <li><%= link_to h(tag.name), commit_path(tag.commit.id) -%></li>
+    <li><%= link_to h(tag.name), tree_path(tag.commit.id) -%></li>
   <% end -%>
   </ul>
 <% end -%>
