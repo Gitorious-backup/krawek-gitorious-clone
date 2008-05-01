@@ -6,9 +6,10 @@ describe RepositoriesController, "index" do
     @project = projects(:johans)
   end
   
-  it "redirects to the project overview page" do
+  it "gets all the projects repositories" do
     get :index, :project_id => @project.slug
-    response.should redirect_to(project_path(@project))
+    response.should be_success
+    assigns(:repositories).should == @project.repositories
   end
 end
 
@@ -41,7 +42,6 @@ describe RepositoriesController, "show" do
     repo = @project.repositories.first
     repo.stub!(:git).and_return(mock("git mock", :null_object => true))
     do_get repo
-    assigns[:merge_request_count].should == 1
   end
 end
 

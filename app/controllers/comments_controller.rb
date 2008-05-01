@@ -36,6 +36,7 @@ class CommentsController < ApplicationController
     @comment.project = @project
     respond_to do |format|
       if @comment.save
+        @project.create_event(Action::COMMENT, @comment, current_user)
         format.html do
           flash[:success] = "Your comment was added"
           if sha1 = @comment.sha1

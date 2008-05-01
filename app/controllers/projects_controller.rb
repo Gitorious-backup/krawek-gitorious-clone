@@ -31,11 +31,16 @@ class ProjectsController < ApplicationController
   
   def show
     @project = Project.find_by_slug!(params[:id], :include => [:repositories])
-    @repositories = @project.repositories
+    @mainline_repository = @project.mainline_repository
+    @repositories = @project.repository_clones
+    @events = @project.events.paginate(:all, :page => params[:page], 
+      :order => "created_at desc", :include => [:user, :project])
+    @atom_auto_discovery_url = formatted_project_path(@project, :atom)
     
     respond_to do |format|
       format.html
-      format.xml { render :xml => @project }
+      format.xml  { render :xml => @project }
+      format.atom { }
     end
   end
   
@@ -46,6 +51,7 @@ class ProjectsController < ApplicationController
     @project = Project.new(params[:project])
     @project.user = current_user
     if @project.save
+      @project.create_event(Action::CREATE_PROJECT, @project, current_user)
       redirect_to projects_path
     else
       render :action => 'new'
@@ -64,6 +70,7 @@ class ProjectsController < ApplicationController
     end
     @project.attributes = params[:project]
     if @project.save
+      @project.create_event(Action::UPDATE_PROJECT, @project, current_user)
       redirect_to project_path(@project)
     else
       render :action => 'new'
@@ -77,7 +84,9 @@ class ProjectsController < ApplicationController
   def destroy
     @project = Project.find_by_slug!(params[:id])
     if @project.can_be_deleted_by?(current_user)
+      project_title = @project.title
       @project.destroy
+      #current_user.create_event(Action::DELETE_PROJECT, nil, project_title)
     else
       flash[:error] = "You're not the owner of this project, or the project has clones"
     end

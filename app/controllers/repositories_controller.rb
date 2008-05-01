@@ -6,24 +6,19 @@ class RepositoriesController < ApplicationController
   session :off, :only => [:writable_by]
   
   def index
-    redirect_to(project_path(@project))
+    @repositories = @project.repositories.find(:all, :include => [:user, :events, :project])
   end
     
   def show
     @repository = @project.repositories.find_by_name!(params[:id])
-    @comment_count = @repository.comments.count
-    @merge_request_count = @repository.merge_requests.count_open
-    if @repository.has_commits?
-      @commits = @repository.paginated_commits(@repository.head_candidate.name, page=1)
-    else
-      @commits = []
-    end
+    @events = @repository.events.paginate(:all, :page => params[:page], 
+      :order => "created_at desc")
     
     @atom_auto_discovery_url = formatted_project_repository_path(@project, @repository, :atom)
     respond_to do |format|
       format.html
       format.xml  { render :xml => @repository }
-      format.atom { render :template => "logs/feed.atom.builder" }
+      format.atom {  }
     end
   end
   
@@ -61,6 +56,8 @@ class RepositoriesController < ApplicationController
     
     respond_to do |format|
       if @repository.save
+        @project.create_event(Action::CLONE_REPOSITORY, @repository, current_user, @repository_to_clone.id)
+        
         location = project_repository_path(@project, @repository)
         format.html { redirect_to location }
         format.xml  { render :xml => @repository, :status => :created, :location => location }        
@@ -89,8 +86,10 @@ class RepositoriesController < ApplicationController
   def destroy
     @repository = @project.repositories.find_by_name!(params[:id])
     if @repository.can_be_deleted_by?(current_user)
+      repo_name = @repository.name
       flash[:notice] = "The repository was deleted"
       @repository.destroy
+      @project.create_event(Action::DELETE_REPOSITORY, @project, current_user, repo_name)
     else
       flash[:error] = "You're not the owner of this repository"
     end
