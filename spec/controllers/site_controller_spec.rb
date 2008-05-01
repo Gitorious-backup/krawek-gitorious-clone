@@ -18,6 +18,7 @@ describe SiteController do
     before(:each) do
       login_as :johan
     end
+    
     it "GETs successfully" do
       get :dashboard
       response.should be_success
@@ -35,17 +36,9 @@ describe SiteController do
       assigns[:projects].should == [*projects(:johans)]
     end
     
-    it "gets a list of recent comments from users projects" do
+    it "get a list of the current_users repositories, that's not mainline" do
       get :dashboard
-      
-      comments(:johans_repos, :johans_repos2).each { |comment|
-        assigns[:recent_comments].include?(comment).should == true
-      }
-    end
-    
-    it "gets a list of all the clones made of current_users repositories" do
-      get :dashboard
-      assigns[:repository_clones].should == [*repositories(:johans2)]
+      assigns[:repositories].should == [repositories(:johans_moe_clone)]
     end
   end
 

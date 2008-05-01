@@ -10,6 +10,7 @@ class Repository < ActiveRecord::Base
   has_many    :proposed_merge_requests, :foreign_key => 'source_repository_id', 
                 :class_name => 'MergeRequest', :order => "id desc", :dependent => :destroy
   has_many    :cloners, :dependent => :destroy
+  has_many    :events, :as => :target, :dependent => :destroy
   
   validates_presence_of :user_id, :project_id, :name
   validates_format_of :name, :with => /^[a-z0-9_\-]+$/i,
@@ -38,12 +39,18 @@ class Repository < ActiveRecord::Base
   end
   
   def self.create_git_repository(path)
-    git_backend.create(full_path_from_partial_path(path))
+    full_path = full_path_from_partial_path(path)
+    git_backend.create(full_path)
+    
+    self.create_hooks(full_path)
   end
   
   def self.clone_git_repository(target_path, source_path)
-    git_backend.clone(full_path_from_partial_path(target_path), 
+    full_path = full_path_from_partial_path(target_path)
+    git_backend.clone(full_path, 
       full_path_from_partial_path(source_path))
+      
+    self.create_hooks(full_path)
   end
   
   def self.delete_git_repository(path)
@@ -129,6 +136,10 @@ class Repository < ActiveRecord::Base
       :command => "delete_git_repository", :arguments => [gitdir])
   end
   
+  def total_commit_count
+    events.count(:conditions => {:action => Action::COMMIT})
+  end
+  
   def paginated_commits(tree_name, page, per_page = 30)
     page    = (page || 1).to_i
     total   = git.commit_count(tree_name)
@@ -166,60 +177,32 @@ class Repository < ActiveRecord::Base
     [week_numbers.reverse, commits.reverse]
   end
   
-  # TODO: refactor into simpler approach
   # TODO: caching
-  def commit_graph_data_by_author(head = "master")    
-    h = Hash.new
-    
-    data = self.git.git.rev_list({:pretty => "format:name:%cn", :since => "1 years ago" }, head)
+  def commit_graph_data_by_author(head = "master")
+    h = {}
+    emails = {}
+    count_author_regexp = /^\s+(\d+)\s(.+)\s\<(\S+)\>$/.freeze
+    data = self.git.git.shortlog({:e => true, :s => true }, head)
     data.each_line do |line|
-      if line =~ /^name:(.*)$/ then
-        author = $1
+      if line =~ count_author_regexp
+        count = $1.to_i
+        author = $2
+        email = $3
         
-        if h[author]
-          h[author] += 1
-        else
-          h[author] = 1
-        end
+        h[author] ||= 0
+        h[author] += count
+        
+        emails[email] = author
       end
     end
     
-    sorted = h.sort_by do |author, commits|
-      commits
+    users = User.find(:all, :conditions => ["email in (?)", emails.keys])
+    users.each do |user|
+      author_name = emails[user.email]
+      h[user.login] = h.delete(author_name)
     end
     
-    labels = []
-    data = []
-    
-    max = 8
-    others = []
-    top = sorted
-    
-    
-    if sorted.size > max
-      top = sorted[sorted.size-max, sorted.size]
-      others = sorted[0, sorted.size-max]
-    end
-    
-    top.each do |entry|
-      author = entry.first
-      v = entry.last
-      
-      data << v
-      labels << author
-    end
-    
-    unless others.empty?
-      others_v = others.inject { |v, acum| [v.last + acum.last] }
-      labels << "others"
-      data << others_v.last
-    end
-    
-    #[labels, data]
-    labels.inject({}) do |hash, label| 
-      hash[label] = data[labels.index(label)] 
-      hash
-    end
+    h
   end
   
   # Returns a Hash {email => user}, where email is selected from the +commits+
@@ -231,10 +214,11 @@ class Repository < ActiveRecord::Base
     users_by_email
   end
   
+  
   def cloned_from(ip, country_code = "--", country_name = nil)
     cloners.create(:ip => ip, :date => Time.now.utc, :country_code => country_code, :country => country_name)
   end
-    
+  
   protected
     def set_as_mainline_if_first
       unless project.repositories.size >= 1
@@ -249,4 +233,33 @@ class Repository < ActiveRecord::Base
     def self.full_path_from_partial_path(path)
       File.expand_path(File.join(GitoriousConfig["repository_base_path"], path))
     end
+    
+  private
+  def self.create_hooks(path)
+    hooks = File.join(GitoriousConfig["repository_base_path"], ".hooks")
+    Dir.chdir(path) do
+      hooks_base_path = File.expand_path("#{RAILS_ROOT}/data/hooks")
+      
+      if not File.symlink?(hooks)
+        if not File.exist?(hooks)
+          FileUtils.ln_s(hooks_base_path, hooks) # Create symlink
+        end
+      elsif File.expand_path(File.readlink(hooks)) != hooks_base_path
+        FileUtils.ln_sf(hooks_base_path, hooks) # Fixup symlink
+      end
+    end
+    
+    local_hooks = File.join(path, "hooks")
+    unless File.exist?(local_hooks)
+      target_path = Pathname.new(hooks).relative_path_from(Pathname.new(path))
+      Dir.chdir(path) do
+        FileUtils.ln_s(target_path, "hooks")
+      end
+    end
+    
+    File.open(File.join(path, "description"), "w") do |file|
+      sp = path.split("/")
+      file << sp[sp.size-1, sp.size].join("/").sub(/\.git$/, "") << "\n"
+    end
+  end
 end

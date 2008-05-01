@@ -2,6 +2,11 @@
 module ApplicationHelper
   include TagsHelper
   
+  def feed_icon(url, alt_title = "Atom feed", size = :small)
+    link_to image_tag("feed_12.png", :class => "feed_icon"), url, 
+      :alt => alt_title, :title => alt_title
+  end
+  
   def default_css_tag_sizes
     %w(tag_size_1 tag_size_2 tag_size_3 tag_size_4)
   end
@@ -35,6 +40,20 @@ module ApplicationHelper
       end
     else
       "selected" if current_page?(url_options)
+    end
+  end
+  
+  def submenu_selected_class_if_current?(section)
+    case section
+    when :overview
+     if %w[projects].include?(controller.controller_name )
+       return "selected"
+     end
+    when :repositories
+      if %w[repositories trees logs commits comitters comments merge_requests 
+            blobs committers].include?(controller.controller_name )
+        return "selected"
+      end
     end
   end
   
@@ -100,5 +119,130 @@ module ApplicationHelper
     if File.exist?(File.join(Gitorious::Graphs::Builder.graph_dir, filename))
       image_tag("graphs/#{filename}")
     end
+  end
+  
+  def action_and_body_for_event(event)
+    target = event.target
+    action = ""
+    body = ""
+    category = ""
+    case event.action
+      when Action::CREATE_PROJECT
+        action = "<strong>created project</strong> #{link_to h(target.title), project_path(target)}"
+        body = truncate(target.stripped_description, 100)
+        category = "project"
+      when Action::DELETE_PROJECT
+        action = "<strong>deleted project</strong> #{h(event.data)}"
+        category = "project"
+      when Action::UPDATE_PROJECT
+        action = "<strong>updated project</strong> #{link_to h(target.title), project_path(target)}"
+        category = "project"
+      when Action::CLONE_REPOSITORY
+        original_repo = Repository.find_by_id(event.data.to_i)
+        next if original_repo.nil?
+        
+        project = target.project
+        
+        action = "<strong>cloned</strong> #{link_to h(project.slug), project_path(project)}/#{link_to h(original_repo.name), project_repository_url(project, original_repo)} in #{link_to h(target.name), project_repository_url(project, target)}"
+        category = "repository"
+      when Action::DELETE_REPOSITORY
+        action = "<strong>deleted repository</strong> #{link_to h(target.title), project_path(target)}/#{event.data}"
+        category = "project"
+      when Action::COMMIT
+        project = event.project
+        action = "<strong>committed</strong> #{link_to event.data[0,8], project_repository_commit_path(project, target, event.data)} to #{link_to h(project.slug), project_path(project)}/#{link_to h(target.name), project_repository_url(project, target)}"
+        body = link_to(h(truncate(event.body, 150)), project_repository_commit_path(project, target, event.data))
+        category = "commit"
+      when Action::CREATE_BRANCH
+        project = target.project
+        if event.data == "master"
+          action = "<strong>started development</strong> of #{link_to h(project.slug), project_path(project)}/#{link_to h(target.name), project_repository_url(project, target)}"
+          body = event.body
+        else
+          action = "<strong>created branch</strong> #{link_to h(event.data), project_repository_tree_path(project, target, event.data)} on #{link_to h(project.slug), project_path(project)}/#{link_to h(target.name), project_repository_url(project, target)}"
+        end
+        category = "commit"
+      when Action::DELETE_BRANCH
+        project = target.project
+        action = "<strong>deleted branch</strong> #{event.data} on #{link_to h(project.slug), project_path(project)}/#{link_to h(target.name), project_repository_url(project, target)}"
+        category = "commit"
+      when Action::CREATE_TAG
+        project = target.project
+        action = "<strong>tagged</strong> #{link_to h(project.slug), project_path(project)}/#{link_to h(target.name), project_repository_url(project, target)}"
+        body = "#{link_to event.data, project_repository_commit_path(project, target, event.data)}<br/>#{event.body}"
+        category = "commit"
+      when Action::DELETE_TAG
+        project = target.project
+        action = "<strong>deleted tag</strong> #{event.data} on #{link_to h(project.slug), project_path(project)}/#{link_to h(target.name), project_repository_url(project, target)}"
+        category = "commit"
+      when Action::ADD_COMMITTER
+        user = target.user
+        repo = target.repository
+        action = "<strong>added committer</strong> #{link_to user.login, user_path(user)} to #{link_to h(repo.project.slug), project_path(repo.project)}/#{link_to h(repo.name), project_repository_url(repo.project, repo)}"
+        category = "repository"
+      when Action::REMOVE_COMMITTER
+        user = User.find_by_id(event.data.to_i)
+        next unless user
+        
+        project = target.project
+        action = "<strong>removed committer</strong> #{link_to user.login, user_path(user)} from #{link_to h(project.slug), project_path(project)}/#{link_to h(target.name), project_repository_url(project, target)}"
+        category = "repository"
+      when Action::COMMENT
+        project = target.project
+        repo = target.repository
+        
+        action = "<strong>commented</strong> on #{link_to h(project.slug), project_path(project)}/#{link_to h(repo.name), project_repository_url(project, repo)}"
+        body = truncate(h(target.body), 150)
+        category = "comment"
+      when Action::REQUEST_MERGE
+        source_repository = target.source_repository
+        project = source_repository.project
+        target_repository = target.target_repository
+        
+        action = "<strong>requested a merge of</strong> #{link_to h(project.slug), project_path(project)}/#{link_to h(source_repository.name), project_repository_url(project, source_repository)} with #{link_to h(project.slug), project_path(project)}/#{link_to h(target_repository.name)}"
+        body = "#{link_to truncate(h(target.proposal), 100), [project, target_repository, target]}"
+        category = "merge_request"
+      when Action::RESOLVE_MERGE_REQUEST
+        source_repository = target.source_repository
+        project = source_repository.project
+        target_repository = target.target_repository
+        
+        action = "<strong>resolved merge request</strong> as [#{target.status_string}] from #{link_to h(project.slug), project_path(project)}/#{link_to h(source_repository.name), project_repository_url(project, source_repository)}"
+        body = "#{link_to truncate(h(target.proposal), 100), [project, target_repository, target]}"
+        category = "merge_request"
+      when Action::UPDATE_MERGE_REQUEST
+        source_repository = target.source_repository
+        project = source_repository.project
+        target_repository = target.target_repository
+        
+        action = "<strong>updated merge request</strong> from #{link_to h(project.title), project_path(project)}/#{link_to h(source_repository.name), project_repository_url(project, source_repository)}"
+        category = "merge_request"
+      when Action::DELETE_MERGE_REQUEST
+        project = target.project
+        
+        action = "<strong>deleted merge request</strong> from #{link_to h(project.slug), project_path(project)}/#{link_to h(target.name), project_repository_url(project, target)}"
+        category = "merge_request"
+    end
+      
+    [action, body, category]
+  end
+  
+  def sidebar_content?
+    !@content_for_sidebar.blank?
+  end
+  
+  def render_readme(repository)
+    possibilities = []
+    repository.git.git.ls_tree({:name_only => true}, "master").each do |line|
+      possibilities << line[0, line.length-1] if line =~ /README.*/
+    end
+    
+    return "" if possibilities.empty?
+    text = repository.git.git.show({}, "master:#{possibilities.first}")
+    markdown(text) rescue simple_format(sanitize(text))
+  end
+  
+  def file_path(repository, filename, head = "master")
+    project_repository_blob_path(repository.project, repository, head, filename)
   end
 end

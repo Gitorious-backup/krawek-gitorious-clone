@@ -9,8 +9,9 @@ class Project < ActiveRecord::Base
     :class_name => "Repository"
   has_many    :repository_clones, :conditions => ["mainline = ?", false],
     :class_name => "Repository"
-
-  is_indexed :fields => ["title", "description", "slug"],
+  has_many    :events, :order => "created_at asc"
+  
+  is_indexed :fields => ["title", "description", "slug"], 
     :concatenate => [
       { :class_name => 'Tag',
         :field => 'name',
@@ -131,6 +132,10 @@ class Project < ActiveRecord::Base
       end
     }
     super({:procs => [info]}.merge(opts))
+  end
+  
+  def create_event(action_id, target, user, data = nil, body = nil)
+    events.create(:action => action_id, :target => target, :user => user, :body => body, :data => data)
   end
 
   protected

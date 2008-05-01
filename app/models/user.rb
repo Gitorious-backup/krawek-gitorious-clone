@@ -6,6 +6,7 @@ class User < ActiveRecord::Base
   has_many :repositories, :through => :committerships
   has_many :ssh_keys, :order => "id desc"
   has_many :comments
+  has_many :events, :order => "events.created_at asc"
   
   # Virtual attribute for the unencrypted password
   attr_accessor :password, :current_password
@@ -118,7 +119,7 @@ class User < ActiveRecord::Base
   def to_xml(opts = {})
     super({:except => [:activation_code, :crypted_password, :remember_token, :remember_token_expires_at, :salt, :ssh_key_id]}.merge(opts))
   end
-
+  
   protected
     # before filter 
     def encrypt_password
