@@ -27,24 +27,10 @@
       <td colspan="3"><%= commit_graph_tag(repo) %></td>
     </tr>
     <% # TODO: Clone stats -%>
-    <% # TODO: divergence from mainline in +/- -%>
   </table>
 <% end -%>
 
 <% content_for :sidebar do -%>
   <h4>Repositories</h4>
-  <ul class="repository_list">
-    <% @repositories.each do |repos|-%>
-      <li class="<%= repos.mainline? ? "mainline" : "clone" -%>">
-        <div class="name">
-          <%= link_to h(repos.name), [@project, repos] -%>
-        </div>
-        <div class="user">
-          <%= gravatar(repos.user.email, :size => 16, :style => "tiny") %>
-          <%= link_to h(repos.user.login), repos.user -%>
-        </div>
-      </li>
-    <% end -%>
-    </li>
-  </ul>
+  <%= render :partial => "repository_list", :locals => {:repositories => @repositories} %>
 <% end -%>

@@ -1,0 +1,14 @@
+<ul class="repository_list">
+  <% repositories.each do |repo|-%>
+    <li class="<%= repo.mainline? ? "mainline" : "clone" -%>">
+      <div class="name">
+        <%= link_to h(repo.name), [repo.project, repo] -%>
+      </div>
+      <div class="user">
+        <%= gravatar(repo.user.email, :size => 16, :style => "tiny") %>
+        <%= link_to h(repo.user.login), repo.user -%>
+      </div>
+    </li>
+  <% end -%>
+  </li>
+</ul>
