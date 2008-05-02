@@ -192,7 +192,7 @@ module ApplicationHelper
         repo = target.repository
         
         action = "<strong>commented</strong> on #{link_to h(project.slug), project_path(project)}/#{link_to h(repo.name), project_repository_url(project, repo)}"
-        body = truncate(h(target.body), 150)
+        body = link_to(truncate(h(target.body), 150), project_repository_comments_path(project, repo) )
         category = "comment"
       when Action::REQUEST_MERGE
         source_repository = target.source_repository

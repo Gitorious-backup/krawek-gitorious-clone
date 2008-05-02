@@ -565,6 +565,10 @@ small.commit_message {
   color: #000;
 }
 
+.event_body a {
+  color: #000;
+}
+
 .gravatar {
   background-color: white;
   border: 1px solid #CCCCCC;
