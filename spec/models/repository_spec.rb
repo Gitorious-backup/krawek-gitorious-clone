@@ -241,6 +241,7 @@ describe Repository do
     repos_mock = mock("Git mock")
     commit_mock = mock("Git::Commit mock", :null_object => true)
     repos_mock.should_receive(:commits).with("master", 1).and_return(commit_mock)
+    repos_mock.should_receive(:heads).and_return([])
     commit_mock.should_receive(:first).and_return(commit_mock)
     @repository.stub!(:git).and_return(repos_mock)
     @repository.stub!(:has_commits?).and_return(true)
