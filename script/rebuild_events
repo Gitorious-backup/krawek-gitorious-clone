@@ -175,6 +175,7 @@ def rebuild_project!(project)
   project.events.destroy_all
 
   project.repositories.each do |repo|
+    next unless repo.has_commits?
     create_events_for_repository(repo, project)
     create_comment_events_for(repo, project)
     create_merge_request_events_for(repo, project)
@@ -191,7 +192,7 @@ when "all"
     begin
       rebuild_project!(project)
       GC.start
-    rescue
+    rescue => e
       puts "!!! failed to rebuild #{project.slug} !!!"
       puts "#{e.class}:#{e.message} \n#{e.backtrace.join("\n  ")}"
       puts
