@@ -115,7 +115,13 @@ class Repository < ActiveRecord::Base
   
   def last_commit
     if has_commits?
-      @last_commit ||= git.commits(head_candidate.name, 1).first
+      @last_commit = git.commits(head_candidate.name, 1).first
+      git.heads.each do |head|
+        commit = git.commits(head.name, 1).first
+        if commit.committed_date > @last_commit.committed_date
+          @last_commit = commit
+        end
+      end
     end
     @last_commit
   end
