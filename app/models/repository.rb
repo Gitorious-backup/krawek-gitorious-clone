@@ -126,6 +126,10 @@ class Repository < ActiveRecord::Base
     @last_commit
   end
   
+  def last_event
+    events.find(:first, :order => ["created_at desc"])
+  end
+  
   def can_be_deleted_by?(candidate)
     !mainline? && (candidate == user)
   end

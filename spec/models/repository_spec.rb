@@ -251,6 +251,11 @@ describe Repository do
     @repository.last_commit.should == commit_mock
   end
   
+  it "has one recent event" do
+    @repository.events.should_receive(:find).with(:first, :order => ["created_at desc"]).and_return(true)
+    @repository.last_event.should == true
+  end
+  
   it "knows who can delete it" do
     @repository.mainline = true
     @repository.can_be_deleted_by?(users(:johan)).should == false
