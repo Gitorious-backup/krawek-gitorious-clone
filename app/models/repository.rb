@@ -10,7 +10,7 @@ class Repository < ActiveRecord::Base
   has_many    :proposed_merge_requests, :foreign_key => 'source_repository_id', 
                 :class_name => 'MergeRequest', :order => "id desc", :dependent => :destroy
   has_many    :cloners, :dependent => :destroy
-  has_many    :events, :as => :target, :dependent => :destroy
+  has_many    :events, :as => :target, :order => "created_at desc", :dependent => :destroy
   
   validates_presence_of :user_id, :project_id, :name
   validates_format_of :name, :with => /^[a-z0-9_\-]+$/i,

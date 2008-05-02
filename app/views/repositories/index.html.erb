@@ -6,6 +6,9 @@
     <tr class="name">
       <td colspan="3" class="<%= repo.mainline? ? "mainline" : "clone" -%>">
         <h2><%= link_to h(repo.name), [@project, repo] -%></h2>
+        <% if repo.has_commits? %>
+          <small>Updated <%= time_ago_in_words(repo.last_commit.committed_date) %> ago.</small><br/>
+        <% end %>
         <%= link_to "Commits", project_repository_logs_path(@project, repo) -%> | 
         <%= link_to "Tree", project_repository_trees_path(@project, repo) -%>
       </td>
