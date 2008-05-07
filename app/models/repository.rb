@@ -219,6 +219,33 @@ class Repository < ActiveRecord::Base
     cloners.create(:ip => ip, :date => Time.now.utc, :country_code => country_code, :country => country_name)
   end
   
+  def status_file(action, count = nil)
+    count = git.commit_count("HEAD") if !count
+    File.join(RAILS_ROOT, "tmp", "repos",
+             "#{project.slug}_#{self.name}_#{count}_#{action}.status")
+  end
+  
+  def has_changed?(action, head = "master")
+    count = git.commit_count(head)
+    !File.exist?(status_file(action, count))
+  end
+  
+  def keep_status!(action, head = "master")
+    count = git.commit_count(head)
+    filepath = status_file(action, count)
+    if !File.directory?(File.dirname(filepath))
+      FileUtils.mkpath(File.dirname(filepath))
+    end
+    
+    Dir[status_file(action, "*")].each do |st|
+      File.unlink(st)
+    end
+    
+    File.open(filepath, "w") do |file|
+      file << Time.now.to_i
+    end
+  end
+  
   protected
     def set_as_mainline_if_first
       unless project.repositories.size >= 1

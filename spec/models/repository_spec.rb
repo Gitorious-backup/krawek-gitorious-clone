@@ -307,6 +307,31 @@ describe Repository do
     users.values.map(&:login).sort.should == users(:johan, :moe).map(&:login).sort
   end
   
+  it "should keep the status file" do
+    mock_path = Dir.tmpdir+"/repo_status"
+    
+    my_git = Grit::Repo.new(@repository.full_repository_path)
+    @repository.should_receive(:git).and_return(my_git)
+    
+    my_git.should_receive(:commit_count).with("master").and_return(10)
+    @repository.should_receive(:status_file).with("spec", 10).and_return(mock_path)
+    @repository.should_receive(:status_file).with("spec", "*").and_return("")
+    Dir.should_receive("[]").and_return([])
+    @repository.keep_status!("spec")
+  end
+  
+  it "should return the status file path" do
+    @repository.status_file("spec", 10).should =~ /_10_spec\.status$/
+  end
+  
+  it "should know if the repository was changed" do
+    my_git = Grit::Repo.new(@repository.full_repository_path)
+    @repository.should_receive(:git).and_return(my_git)
+    my_git.should_receive(:commit_count).with("master").and_return(10)
+    
+    @repository.has_changed?("spec", "master").should == true
+  end
+  
   describe "observers" do
     it "sends an email to the admin if there's a parent" do
       Mailer.should_receive(:deliver_new_repository_clone).with(@repository).and_return(true)
