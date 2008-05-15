@@ -10,6 +10,7 @@ class Project < ActiveRecord::Base
   has_many    :repository_clones, :conditions => ["mainline = ?", false],
     :class_name => "Repository"
   has_many    :events, :order => "created_at asc", :dependent => :destroy
+  has_one     :stats, :class_name => "ProjectStats", :dependent => :destroy
   
   is_indexed :fields => ["title", "description", "slug"], 
     :concatenate => [
@@ -141,6 +142,7 @@ class Project < ActiveRecord::Base
   protected
     def create_mainline_repository
       self.repositories.create!(:user => self.user, :name => "mainline")
+      create_stats
     end
 
     def downcase_slug
