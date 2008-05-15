@@ -5,23 +5,22 @@ module Gitorious
 module Sloc
 
 class Stats
-  attr_reader :filenames
+  attr_reader :branch, :git_dir
   
   def initialize(git_dir)
     @git_dir = git_dir
-    @filenames = []
+    @branch = "HEAD"
   end
   
   def parse!(branch = "HEAD")
-    @filenames = `git --git-dir=#{@git_dir} ls-tree -r --name-only --full-name #{branch}`.split
-    
+    @branch = branch
     counts = {}
     
-    @filenames.each do |file|
+    filenames.each do |file|
       file.strip!
       
       languages_found = Set.new
-      sfc = Ohcount::GitFileContext.new(@git_dir, file, @filenames, branch)
+      sfc = Ohcount::GitFileContext.new(@git_dir, file, filenames, branch)
       polyglot = Ohcount::Detector.detect(sfc)
       
       if polyglot
@@ -37,6 +36,11 @@ class Stats
     
     counts
   end
+  
+  def filenames
+    @filenames ||= `git --git-dir=#{@git_dir} ls-tree -r --name-only --full-name #{@branch}`.split
+  end
+  
 end
 
 end
