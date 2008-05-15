@@ -1,0 +1,55 @@
+#!/usr/bin/env ruby
+
+ENV["RAILS_ENV"] ||= "production"
+
+require File.dirname(__FILE__) + "/../config/environment"
+
+
+Project.find(:all, :include => [:events, :stats, :repositories]).each do |project|
+  mainline = project.mainline_repository
+  
+  next if !mainline.has_commits? or !mainline.has_changed?("projectstats")
+  
+  $stdout.puts "=> Collecting stats for project: '#{project.slug}'"
+  
+  sloc = Gitorious::Sloc::Stats.new(mainline.full_repository_path)
+  sloc_info = sloc.parse!
+  
+  total_loc = sloc_info.values.inject(0) { |sum, v| sum + v[:code] }
+  primary_language = sloc_info.sort_by { |key, value| value[:code] }.last
+  
+  stats = project.stats
+  stats.loc = total_loc
+  stats.primary_language = primary_language.first.to_s
+  stats.files = sloc.filenames.size
+  
+  stats.activities = project.events.size
+  activities_last_week = 0
+  
+  project.events.reverse_each do |event|
+    if event.created_at > 8.days.ago.utc
+      activities_last_week += 1 
+    else
+      break # 'cause it's ordered
+    end
+  end
+  stats.activities_last_week = activities_last_week
+  stats.repositories = project.repositories.size
+  
+  stats.contributors = mainline.git.git.shortlog({:s => true}, "master").split("\n").size
+  
+  $stdout.puts "Repositories: #{stats.repositories}"
+  $stdout.puts "Primary language: #{stats.primary_language}"
+  $stdout.puts "LOC: #{stats.loc}"
+  $stdout.puts "Files: #{stats.files}"
+  $stdout.puts "Contributors: #{stats.contributors}"
+  $stdout.puts "Total activities: #{stats.activities}"
+  $stdout.puts "Activities last week (#{8.days.ago.strftime("%F")} - #{Time.now.strftime("%F")}): #{stats.activities_last_week}"
+  
+  if !stats.save
+    $stderr.puts "Cannot save stats for: '#{project.slug}'"
+  else
+    mainline.keep_status!("projectstats")
+  end
+end
+
