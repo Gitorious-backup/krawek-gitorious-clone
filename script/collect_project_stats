@@ -8,20 +8,23 @@ require File.dirname(__FILE__) + "/../config/environment"
 Project.find(:all, :include => [:events, :stats, :repositories]).each do |project|
   mainline = project.mainline_repository
   
-  next if !mainline.has_commits? or !mainline.has_changed?("projectstats")
+  next if !mainline.has_commits?
   
   $stdout.puts "=> Collecting stats for project: '#{project.slug}'"
-  
-  sloc = Gitorious::Sloc::Stats.new(mainline.full_repository_path)
-  sloc_info = sloc.parse!
-  
-  total_loc = sloc_info.values.inject(0) { |sum, v| sum + v[:code] }
-  primary_language = sloc_info.sort_by { |key, value| value[:code] }.last
-  
   stats = project.stats
-  stats.loc = total_loc
-  stats.primary_language = primary_language.first.to_s
-  stats.files = sloc.filenames.size
+  
+  if mainline.has_changed?("projectstats")
+    sloc = Gitorious::Sloc::Stats.new(mainline.full_repository_path)
+    sloc_info = sloc.parse!
+    
+    total_loc = sloc_info.values.inject(0) { |sum, v| sum + v[:code] }
+    primary_language = sloc_info.sort_by { |key, value| value[:code] }.last
+    
+    stats.loc = total_loc
+    
+    stats.primary_language = primary_language.first.to_s
+    stats.files = sloc.filenames.size
+  end
   
   stats.activities = project.events.size
   activities_last_week = 0
