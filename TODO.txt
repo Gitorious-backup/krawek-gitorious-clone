@@ -8,7 +8,6 @@ new-ui:
 * mandatory project descriptions, at least a sentence or two
 * tweak fonts-sizes and line-heights
 * Clone stats graph on repositories#index
-* popular & active projects on frontpage
 * make the top-header smaller (move gitorious logo to footer?)
 
 (in no particular order)
@@ -40,7 +39,6 @@ two from Yurii:
 *a Tone down the "owner" of a repository, or implement a proper "mirror" project type.
 *b be able to mark a project as a "mirror"
 * Nicer diff stats
-* more interesting project stats on frontpage
 * parse git submodule data and link to project if submodule is in gitorious
 * add mainline as a remote branch in clones
 * timezone support

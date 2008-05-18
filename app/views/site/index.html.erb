@@ -27,15 +27,62 @@
   <% end -%>
 </div>
 
-<div id="newest_projects">
-  <h2>Newest projects</h2>
-  <ul>
-    <% @projects.each do |project| -%>
-      <li>
-        <strong><%= link_to h(project.title), project -%></strong>
-        <small class="hint"><%= truncate(h(project.stripped_description), 100) -%></small>
-      </li>
-    <% end -%>
-  </ul>
-  <p><%= link_to "View more &raquo;", projects_path -%></p>
-</div>
+<table class="repository_meta">
+  <tr>
+    <th><h2>Newest projects</h2></th>
+    <th><h2>Most active project</h2></th>
+    <th><h2>Most downloaded project</h2></th>
+    <th><h2>Most forked project</h2></th>
+  </tr>
+  <tr>
+    <td>
+      <div id="newest_projects">
+      <ul>
+        <% @projects.each do |project| -%>
+          <li>
+            <strong><%= link_to h(project.title), project -%></strong>
+            <small class="hint"><%= truncate(h(project.stripped_description), 100) -%></small>
+          </li>
+        <% end -%>
+      </ul>
+    </div>
+    </td>
+    <td>
+      <div id="newest_projects">
+      <ul>
+        <% ProjectStats.most_active_project.each do |stat| -%>
+          <li>
+            <strong><%= link_to h(stat.project.title), stat.project -%></strong>
+            <small class="hint"><%= truncate(h(stat.project.stripped_description), 100) -%></small>
+          </li>
+        <% end -%>
+      </ul>
+    </div>
+    </td>
+    <td>
+      <div id="newest_projects">
+      <ul>
+        <% ProjectStats.most_downloaded_project.each do |stat| -%>
+          <li>
+            <strong><%= link_to h(stat.project.title), stat.project -%></strong>
+            <small class="hint"><%= truncate(h(stat.project.stripped_description), 100) -%></small>
+          </li>
+        <% end -%>
+      </ul>
+    </div>
+    </td>
+    <td>
+      <div id="newest_projects">
+      <ul>
+        <% ProjectStats.most_forked_project.each do |stat| -%>
+          <li>
+            <strong><%= link_to h(stat.project.title), stat.project -%></strong>
+            <small class="hint"><%= truncate(h(stat.project.stripped_description), 100) -%></small>
+          </li>
+        <% end -%>
+      </ul>
+    </div>
+    </td>
+  </tr>
+</table>
+
