@@ -41,7 +41,7 @@ Project.find(:all, :include => [:events, :stats, :repositories]).each do |projec
   
   stats.contributors = mainline.git.git.shortlog({:s => true}, "master").split("\n").size
   
-#   stats.downloads = Cloner.count("ip", :group => "ip", :conditions => ["project_id = (?)", project.id] )
+  stats.downloads = Cloner.count("ip", :group => "ip", :conditions => ["repository_id = (?)", mainline.id] ).size
   
   $stdout.puts "Repositories: #{stats.repositories}"
   $stdout.puts "Primary language: #{stats.primary_language}"
@@ -50,7 +50,7 @@ Project.find(:all, :include => [:events, :stats, :repositories]).each do |projec
   $stdout.puts "Contributors: #{stats.contributors}"
   $stdout.puts "Total activities: #{stats.activities}"
   $stdout.puts "Activities last week (#{8.days.ago.strftime("%F")} - #{Time.now.strftime("%F")}): #{stats.activities_last_week}"
-#   $stdout.puts "Downloads: #{stats.downloads}"
+  $stdout.puts "Downloads: #{stats.downloads}"
   
   if !stats.save
     $stderr.puts "Cannot save stats for: '#{project.slug}'"
