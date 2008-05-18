@@ -9,6 +9,7 @@ class CreateProjectStats < ActiveRecord::Migration
       t.integer :activities_last_week, :default => 0
       t.integer :files, :default => 0
       t.integer :repositories, :default => 1
+      t.integer :downloads, :default => 0
 
       t.timestamps
     end
