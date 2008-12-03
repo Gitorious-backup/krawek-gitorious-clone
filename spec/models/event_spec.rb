@@ -25,7 +25,7 @@ describe Event do
     @repository = repositories(:johans)
     @project = @repository.project
   end
-  
+
   def new_event(opts={})
     c = Event.new({
       :target => repositories(:johans),
@@ -35,10 +35,75 @@ describe Event do
     c.project = opts[:project] || @project
     c
   end
-  
+
   it "should have valid associations" do
     @event.should have_valid_associations
-  end  
-  
+  end
+
+  describe "processing events" do
+    before do
+      @revs = ["old", "new", "refs/heads/master"]
+      @repo_path = "/repo/path"
+      @repository = repositories(:johans)
+      @project = @repository.project
+      @git = mock("Git")
+      Event.stub!(:git).and_return(@git)
+      Grit::Git.stub!(:new).and_return(@git)
+
+      Repository.stub!(:find_by_path).and_return(@repository)
+    end
+
+    it "should return false if the given repository is nil" do
+      Repository.should_receive(:find_by_path).with(@repo_path).and_return(nil)
+      Event.process(@repo_path, []).should be_false
+    end
+
+    it "should not process anything if 'revisions' is empty" do
+      Event.process(@repo_path, []).should == []
+    end
+
+    describe "finding the action" do
+      it "should be :create" do
+        Event.send(:find_action, "00000", "1234").should == :create
+      end
+
+      it "should be :update" do
+        Event.send(:find_action, "1234", "4567").should == :update
+      end
+
+      it "should be :delete" do
+        Event.send(:find_action, "1234", "00000").should == :delete
+      end
+    end
+
+    describe "finding the types" do
+      describe "when action is :delete" do
+        it "should find the type" do
+          @git.should_not_receive(:cat_file)
+          Event.send(:find_types, "1234", "5678", :delete).should ==
+            ["commit", "commit", "1234", "commit"]
+        end
+      end
+
+      describe "when action is :update" do
+        it "should find the type" do
+          @git.should_receive(:cat_file).with({:t=>true}, "1234").and_return("new")
+          @git.should_receive(:cat_file).with({:t=>true}, "5678").and_return("old")
+          Event.send(:find_types, "1234", "5678", :update).should  ==
+            ["old", "new", "5678", "commit"]
+        end
+      end
+
+      describe "when action is :create" do
+        it "should find the type" do
+          @git.should_receive(:cat_file).with({:t=>true}, "5678").and_return("new")
+          @git.should_not_receive(:cat_file).with({:t=>true}, "1234").and_return("old")
+          Event.send(:find_types, "1234", "5678", :create).should ==
+            ["new", "commit", "5678", "commit"]
+        end
+      end
+    end
+  end
+
 end
 
